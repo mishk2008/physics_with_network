@@ -30,6 +30,7 @@ std::vector<uint8_t> Marshaling::serialize(const Snapshot& snapshot_) {
     for (uint16_t i=0; i<arr_size; i++) {
         write_binary(output_data, snapshot_.balls[i].id);
         write_binary(output_data, snapshot_.balls[i].radius);
+        write_binary(output_data, snapshot_.balls[i].mass);
         write_binary(output_data, snapshot_.balls[i].pos.x);
         write_binary(output_data, snapshot_.balls[i].pos.y);
         write_binary(output_data, snapshot_.balls[i].vel.x);
@@ -47,7 +48,7 @@ Snapshot Marshaling::deserialize(const uint8_t* data, size_t size) {
     snapshot.tick=read_binary<uint32_t>(ptr);  
     uint16_t arr_size=read_binary<uint16_t>(ptr);
 
-    constexpr size_t size_of_one_ball{5*sizeof(float)+sizeof(uint32_t)};
+    constexpr size_t size_of_one_ball{6*sizeof(float)+sizeof(uint32_t)};
     if (size < (arr_size*size_of_one_ball)) throw std::runtime_error("buffer too small for all balls");   
 
     snapshot.balls.resize(arr_size);
@@ -55,6 +56,7 @@ Snapshot Marshaling::deserialize(const uint8_t* data, size_t size) {
     for (uint16_t i=0; i<arr_size; i++) {
         snapshot.balls[i].id=read_binary<uint32_t>(ptr);
         snapshot.balls[i].radius=read_binary<float>(ptr);
+        snapshot.balls[i].mass=read_binary<float>(ptr);
         snapshot.balls[i].pos.x=read_binary<float>(ptr);
         snapshot.balls[i].pos.y=read_binary<float>(ptr);
         snapshot.balls[i].vel.x=read_binary<float>(ptr);

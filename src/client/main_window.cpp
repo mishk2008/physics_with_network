@@ -28,9 +28,30 @@ void MainWindow::paintEvent(QPaintEvent* event) {
 
     painter.drawRect(0, 0, 800, 600);
 
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(Qt::red);
     for (const auto& ball : balls_) {
+        QString b_pos_x=QString("x: %1").arg(ball.pos.x, 0, 'f', 1);
+        QString b_pos_y=QString("y: %1").arg(ball.pos.y, 0, 'f', 1);
+        double velocity{sqrt(std::pow(ball.vel.x, 2)+std::pow(ball.vel.y, 2))};
+        QString b_vel=QString("vel: %1").arg(velocity, 0, 'f', 1);
+        QString b_mass=QString("mass: %1").arg(ball.mass, 0, 'f', 1);
+        QString b_id=QString("id: %0").arg(ball.id);
+
+        painter.setPen(Qt::green);
+
+        painter.drawLine(ball.pos.x, ball.pos.y, ball.pos.x+10, ball.pos.y+10);
+        painter.drawLine(ball.pos.x+10, ball.pos.y+10, ball.pos.x+60, ball.pos.y+10);
+
+        int textX = ball.pos.x + 35;
+        int textY = ball.pos.y + 10;
+        
+        painter.drawText(textX, textY, b_id);        
+        painter.drawText(textX, textY + 12, b_vel);        
+        painter.drawText(textX, textY + 24, b_mass); 
+        painter.drawText(textX, textY + 36, b_pos_x);
+        painter.drawText(textX, textY + 48, b_pos_y);
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(Qt::red);
         painter.drawEllipse(QPointF(ball.pos.x, ball.pos.y), ball.radius, ball.radius);
     }
 }

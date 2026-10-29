@@ -19,6 +19,8 @@ int main() {
     std::function<void()> tick_handler=[&]() {
         world.update(interval);
 
+        //world.print();
+
         auto snap{world.make_snapshot(tick)};
 
         server->broadcast_snapshot(snap);

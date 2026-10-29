@@ -14,6 +14,7 @@ struct Ball {
     Vec2 pos;
     Vec2 vel;
     float radius;
+    float mass;
 };
 
 struct Snapshot {
