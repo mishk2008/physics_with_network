@@ -4,10 +4,13 @@
 #include <algorithm>
 #include <iostream>
 
-Server::Server(asio::io_context& io_context, short port) 
-: acceptor_(io_context, tcp::endpoint(tcp::v4(), port)), socket_(io_context) {}
+TcpServer::TcpServer(asio::io_context& io_context, short port) 
+: acceptor_(io_context, tcp::endpoint(tcp::v4(), port)), socket_(io_context) {
+    std::cout   << "Server is running  on: " << acceptor_.local_endpoint().address().to_string()
+                << ":" << acceptor_.local_endpoint().port() << '\n';
+}
 
-void Server::do_accept() {
+void TcpServer::do_accept() {
     acceptor_.async_accept( socket_,
     [this, self=shared_from_this()](std::error_code ec) {
         if (!ec) {
@@ -25,7 +28,7 @@ void Server::do_accept() {
     });
 }
 
-void Server::remove_session(std::shared_ptr<Session> session) {
+void TcpServer::remove_session(std::shared_ptr<Session> session) {
     auto it{std::remove(sessions_.begin(), sessions_.end(), session)};
 
     sessions_.erase(it, sessions_.end());
@@ -33,7 +36,7 @@ void Server::remove_session(std::shared_ptr<Session> session) {
     std::cout << "Client disconected. Sessions left : " << sessions_.size() << "\n";
 }
 
-void Server::broadcast_snapshot(const Snapshot& snapshot) {
+void TcpServer::broadcast_snapshot(const Snapshot& snapshot) {
     auto payload{Marshaling::serialize(snapshot)};
 
     for (auto& session : sessions_) {

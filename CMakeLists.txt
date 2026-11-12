@@ -33,6 +33,8 @@ target_link_libraries(  server PRIVATE
 add_executable( client WIN32
                 src/client/main.cpp
                 src/client/main_window.cpp
+                src/client/ball_widget.cpp
+                src/client/network_client.cpp
                 src/common/serialize.cpp
 )
 target_include_directories( client PRIVATE 

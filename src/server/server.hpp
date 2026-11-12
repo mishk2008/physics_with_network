@@ -3,6 +3,7 @@
 #include "types.hpp"
 #include "physics.hpp"
 #include "serialize.hpp"
+#include "itransport.hpp"
 class Session;
 
 #include <memory>
@@ -10,9 +11,9 @@ class Session;
 
 using asio::ip::tcp;
 
-class Server : public std::enable_shared_from_this<Server> {
+class TcpServer : public IServerTransport, public std::enable_shared_from_this<TcpServer> {
 public:
-    explicit Server(asio::io_context& io_context, short port);
+    explicit TcpServer(asio::io_context& io_context, short port);
 
     void start() { do_accept(); }
 

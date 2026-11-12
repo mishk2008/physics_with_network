@@ -17,7 +17,7 @@ World::World(size_t balls_num)
     std::uniform_real_distribution<float> dis_x(50.0f, width_-50.0f);
     std::uniform_real_distribution<float> dis_y(50.0f, height_-50.0f);
     std::uniform_real_distribution<float> dis_v(-100.0f,100.0f);
-    std::uniform_real_distribution<float> dis_mass(0.0f,100.0f);
+    std::uniform_real_distribution<float> dis_mass(1.0f,100.0f);
 
     for (size_t i{0}; i<balls_num; i++) {
         balls_.push_back(Ball{  static_cast<uint32_t>(i),
@@ -28,6 +28,34 @@ World::World(size_t balls_num)
                                     10.0f,
                                     dis_mass(gen)});
     }
+}
+
+void World::add_random_ball() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis_x(50.0f, width_-50.0f);
+    std::uniform_real_distribution<float> dis_y(50.0f, height_-50.0f);
+    std::uniform_real_distribution<float> dis_v(-100.0f,100.0f);
+    std::uniform_real_distribution<float> dis_mass(1.0f,100.0f);  
+
+    balls_.push_back( Ball{static_cast<uint32_t>(balls_.size()), dis_x(gen), dis_y(gen), dis_v(gen), dis_v(gen), 10.0f, dis_mass(gen)});
+}
+
+void World::add_ball(const Ball& ball) {
+    balls_.push_back(ball);
+}
+
+void World::delete_ball() {
+    if (balls_.size() == 0) return;
+    balls_.pop_back();
+}
+
+std::pair<float, float> World::get_borders() const {
+    return std::pair<float, float>(width_, height_);
+}
+
+size_t World::get_balls_num() const {
+    return balls_.size();
 }
 
 void World::update(float dt) {

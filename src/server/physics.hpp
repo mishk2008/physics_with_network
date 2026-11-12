@@ -11,6 +11,15 @@ class World {
 public:
     explicit World(size_t balls_num);
 
+    void add_random_ball();
+
+    void add_ball(const Ball& ball);
+
+    void delete_ball();
+
+    std::pair<float, float> get_borders() const;
+    size_t get_balls_num() const;
+
     void update(float dt);
 
     Snapshot make_snapshot(uint32_t tick) const;

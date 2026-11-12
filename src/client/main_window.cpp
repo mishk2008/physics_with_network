@@ -1,80 +1,76 @@
-#include <QPainter>
+#include <regex>
 
 #include "main_window.hpp"
-#include "serialize.hpp"
+#include "ball_widget.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
 : QWidget(parent) {
     setWindowTitle("Moving balls");
-    resize(800, 600);
 
-    socket_=new QTcpSocket(this);
+    ball_widget_= new BallWidget(this);
+    ball_parameters_= new QCheckBox(this);
+    ball_parameters_->setChecked(false);
 
-    connect(socket_, &QTcpSocket::readyRead, this, &MainWindow::on_ready_read);
-    socket_->connectToHost("127.0.0.1", 12345);
-}
+    host_input_= new QLineEdit("127.0.0.1", this);
+    port_input_= new QLineEdit("12345", this);
+    port_input_->setFixedWidth(60);
 
-void MainWindow::paintEvent(QPaintEvent* event) {
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
+    connect_button_= new QPushButton("Connect", this);
+    disconnect_button_= new QPushButton("Disconnect", this);
+    disconnect_button_->setEnabled(false);
 
-    QPen borderPen;
-    borderPen.setColor(Qt::blue);
-    borderPen.setWidth(3);
-    borderPen.setStyle(Qt::DashLine);
+    status_label_= new QLabel("Status : Disconnected", this);
 
-    painter.setPen(borderPen);
-    painter.setBrush(Qt::NoBrush);
+    auto* top_layout{new QHBoxLayout()};
+    top_layout->addWidget(new QLabel("Host:", this));
+    top_layout->addWidget(host_input_);
+    top_layout->addWidget(new QLabel("Port:", this));
+    top_layout->addWidget(port_input_);
+    top_layout->addWidget(connect_button_);
+    top_layout->addWidget(disconnect_button_);
+    top_layout->addWidget(new QLabel("Show balls parameters:", this));
+    top_layout->addWidget(ball_parameters_);
+    top_layout->addWidget(status_label_);
+    top_layout->addStretch();
 
-    painter.drawRect(0, 0, 800, 600);
+    auto* main_layout{new QVBoxLayout()};
+    main_layout->addLayout(top_layout);
+    main_layout->addWidget(ball_widget_);
+    setLayout(main_layout);
 
-    for (const auto& ball : balls_) {
-        QString b_pos_x=QString("x: %1").arg(ball.pos.x, 0, 'f', 1);
-        QString b_pos_y=QString("y: %1").arg(ball.pos.y, 0, 'f', 1);
-        double velocity{sqrt(std::pow(ball.vel.x, 2)+std::pow(ball.vel.y, 2))};
-        QString b_vel=QString("vel: %1").arg(velocity, 0, 'f', 1);
-        QString b_mass=QString("mass: %1").arg(ball.mass, 0, 'f', 1);
-        QString b_id=QString("id: %0").arg(ball.id);
+    network_client_ = new TcpNetworkClient(this);
 
-        painter.setPen(Qt::green);
+    connect(network_client_, &IClientTransport::snapshot_received, this, [this](const Snapshot& snap) {
+        ball_widget_->update_snapshot(snap.balls);
+    });
 
-        painter.drawLine(ball.pos.x, ball.pos.y, ball.pos.x+10, ball.pos.y+10);
-        painter.drawLine(ball.pos.x+10, ball.pos.y+10, ball.pos.x+60, ball.pos.y+10);
+    connect(connect_button_, &QPushButton::clicked, this, [this]() {
+        QString host{host_input_->text()};
+        std::regex host_pattern(
+            "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+        );
+        bool ok{0};
+        quint16 port{static_cast<quint16>(port_input_->text().toUShort(&ok))};
+        if (!ok) { status_label_->setText("Status : Invalid port");
+        } else if (!(std::regex_match(host.toStdString(), host_pattern))) { status_label_->setText("Status : Invalid host");
+        } else {
+            status_label_->setText(QString("Status : Connecting to %1:%2...").arg(host).arg(port));
+            network_client_->connect_to_server(host, port);
+        }
 
-        int textX = ball.pos.x + 35;
-        int textY = ball.pos.y + 10;
-        
-        painter.drawText(textX, textY, b_id);        
-        painter.drawText(textX, textY + 12, b_vel);        
-        painter.drawText(textX, textY + 24, b_mass); 
-        painter.drawText(textX, textY + 36, b_pos_x);
-        painter.drawText(textX, textY + 48, b_pos_y);
+        connect_button_->setEnabled(false);
+        disconnect_button_->setEnabled(true);         
+    });
 
-        painter.setPen(Qt::NoPen);
-        painter.setBrush(Qt::red);
-        painter.drawEllipse(QPointF(ball.pos.x, ball.pos.y), ball.radius, ball.radius);
-    }
-}
+    connect(disconnect_button_, &QPushButton::clicked, this, [this]() {
+        network_client_->disconnect_from_server();
 
-void MainWindow::on_ready_read() {
-    network_buffer_.append(socket_->readAll());
+        status_label_->setText("Status : Disconnected");
+        connect_button_->setEnabled(true);
+        disconnect_button_->setEnabled(false);
 
-    while (network_buffer_.size() >= 4) {
-        uint32_t len;
+        ball_widget_->clear_field();
+    });
 
-        std::memcpy(&len, network_buffer_.constData(), 4);
-        to_network(len);
-
-        if (network_buffer_.size() < 4+len) break;
-
-        std::vector<uint8_t> payload(len);
-        std::memcpy(payload.data(), network_buffer_.constData()+4, len);
-
-        network_buffer_.remove(0, 4+len);
-
-        Snapshot snap{Marshaling::deserialize(payload.data(), payload.size())};
-        balls_=snap.balls;
-
-        update();
-    }
+    connect(ball_parameters_, &QCheckBox::toggled, ball_widget_, &BallWidget::setBallInfoVisible);
 }
