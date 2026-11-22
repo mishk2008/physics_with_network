@@ -7,6 +7,7 @@
 class Session;
 
 #include <memory>
+#include <deque>
 #include <asio.hpp>
 
 using asio::ip::tcp;

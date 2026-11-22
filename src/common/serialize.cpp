@@ -41,15 +41,17 @@ std::vector<uint8_t> Marshaling::serialize(const Snapshot& snapshot_) {
 }
 
 Snapshot Marshaling::deserialize(const uint8_t* data, size_t size) {
-    if (size < sizeof(uint16_t)+sizeof(uint32_t)) throw std::runtime_error("buffer too small for headers");   
+    constexpr size_t kHeaderSize{sizeof(uint32_t) + sizeof(uint16_t)};
+    constexpr size_t kBallSize{sizeof(uint32_t) + 6*sizeof(float)};
+    if (size < kHeaderSize) throw std::runtime_error("too small for headers"); 
+
     Snapshot snapshot;
     const uint8_t* ptr{data};    
 
     snapshot.tick=read_binary<uint32_t>(ptr);  
     uint16_t arr_size=read_binary<uint16_t>(ptr);
 
-    constexpr size_t size_of_one_ball{6*sizeof(float)+sizeof(uint32_t)};
-    if (size < (arr_size*size_of_one_ball)) throw std::runtime_error("buffer too small for all balls");   
+    if (size != kHeaderSize + static_cast<size_t>(arr_size)*kBallSize) throw std::runtime_error("packet size dismatch");   
 
     snapshot.balls.resize(arr_size);
 

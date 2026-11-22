@@ -11,6 +11,8 @@ class World {
 public:
     explicit World(size_t balls_num);
 
+    ~World();
+
     void add_random_ball();
 
     void add_ball(const Ball& ball);

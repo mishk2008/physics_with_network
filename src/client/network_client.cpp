@@ -1,18 +1,31 @@
 #include "network_client.hpp"
 
+//#include <QThread>
+
 TcpNetworkClient::TcpNetworkClient(QObject *parent)
 : IClientTransport(parent) {
 
     socket_=new QTcpSocket(this);
     connect(socket_, &QTcpSocket::readyRead, this, &TcpNetworkClient::on_ready_read);
+
+    connect(socket_, &QTcpSocket::connected, this, &TcpNetworkClient::connected);
+    connect(socket_, &QTcpSocket::disconnected, this, &TcpNetworkClient::disconnected);
+
+    connect(socket_, &QTcpSocket::errorOccurred, this, [this]() {
+        network_buffer_.clear();
+        
+        emit disconnected();
+        emit error_occured(socket_->errorString());
+    });
 }
 
 void TcpNetworkClient::on_ready_read() {
     network_buffer_.append(socket_->readAll());
 
+    //QThread::msleep(300);
+
     while (network_buffer_.size() >= 4) {
         uint32_t len;
-
         std::memcpy(&len, network_buffer_.constData(), 4);
         to_network(len);
 
@@ -23,20 +36,30 @@ void TcpNetworkClient::on_ready_read() {
 
         network_buffer_.remove(0, 4+len);
 
-        Snapshot snap{Marshaling::deserialize(payload.data(), payload.size())};
+        try {
+            Snapshot snap{Marshaling::deserialize(payload.data(), payload.size())};
+            emit snapshot_received(snap);
+        } catch (const std::exception& e) {
+            socket_->abort();
+            emit error_occured(QString("Protocol error : %1").arg(e.what()));
+            return;
+        }
 
-        emit snapshot_received(snap);
     }
 }
 
 void TcpNetworkClient::connect_to_server(const QString& host, quint16 port) {
+    socket_->abort();
+    network_buffer_.clear();
+
     socket_->connectToHost(host, port);
-    emit connected();
 }
 
 void TcpNetworkClient::disconnect_from_server() {
+    socket_->abort();
+    network_buffer_.clear();
+
     socket_->disconnectFromHost();
-    emit disconnected();
 }
 
 #include "moc_itransport.cpp" /* 

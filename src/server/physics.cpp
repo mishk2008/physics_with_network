@@ -30,6 +30,8 @@ World::World(size_t balls_num)
     }
 }
 
+World::~World() {}
+
 void World::add_random_ball() {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -65,17 +67,21 @@ void World::update(float dt) {
         if (ball.pos.x + ball.radius > width_) {
             ball.pos.x=width_-ball.radius;
             ball.vel.x=-ball.vel.x;
+            //add_random_ball();
         } else if (ball.pos.x - ball.radius < 0.0f) {
             ball.pos.x=ball.radius;
-            ball.vel.x=-ball.vel.x;                
+            ball.vel.x=-ball.vel.x;
+            //add_random_ball();               
         }
 
         if (ball.pos.y + ball.radius > height_) {
             ball.pos.y=height_-ball.radius;
             ball.vel.y=-ball.vel.y;
+            //add_random_ball();
         } else if (ball.pos.y - ball.radius < 0.0f) {
             ball.pos.y=ball.radius;
-            ball.vel.y=-ball.vel.y;                
+            ball.vel.y=-ball.vel.y;
+            //add_random_ball();                
         }            
     }
 
@@ -86,15 +92,31 @@ void World::update(float dt) {
     const uint32_t COLS{static_cast<uint32_t>(width_/100)};
     const uint32_t ROWS{static_cast<uint32_t>(height_/100)};
     for (auto& ball : balls_) {
-        int min_col{std::max(0, static_cast<int>((ball.pos.x-ball.radius)/100))};
-        int max_col{std::min(static_cast<int>(COLS-1), static_cast<int>((ball.pos.x+ball.radius)/100))};
-        int min_row{std::max(0, static_cast<int>((ball.pos.y-ball.radius)/100))};
-        int max_row{std::min(static_cast<int>(ROWS-1), static_cast<int>((ball.pos.y+ball.radius)/100))};
+        if (!std::isfinite(ball.pos.x) || !std::isfinite(ball.pos.y)) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<float> dis_x(50.0f, width_-50.0f);
+            std::uniform_real_distribution<float> dis_y(50.0f, height_-50.0f);
+            ball.pos.x=dis_x(gen);
+            ball.pos.y=dis_y(gen);
+            ball.vel.x=0;
+            ball.vel.y=0;
+        }
 
-        for (uint32_t row=min_row; row<=max_row; row++)
-            for (uint32_t col=min_col; col<=max_col; col++) {
+        int min_col{static_cast<int>((ball.pos.x-ball.radius)/100)};
+        int max_col{static_cast<int>((ball.pos.x+ball.radius)/100)};
+        int min_row{static_cast<int>((ball.pos.y-ball.radius)/100)};
+        int max_row{static_cast<int>((ball.pos.y+ball.radius)/100)};
+
+        min_col = std::clamp(min_col, 0, static_cast<int>(COLS-1));
+        max_col = std::clamp(max_col, 0, static_cast<int>(COLS-1));
+        min_row = std::clamp(min_row, 0, static_cast<int>(ROWS-1));
+        max_row = std::clamp(max_row, 0, static_cast<int>(ROWS-1));
+
+        for (int row=min_row; row<=max_row; row++)
+            for (int col=min_col; col<=max_col; col++) {
                 uint32_t cell_index{row*COLS+col};
-                worldGrid[cell_index].push_back(&ball);
+                if (cell_index < worldGrid.size()) worldGrid[cell_index].push_back(&ball);
             }
     }
 
@@ -108,7 +130,7 @@ void World::update(float dt) {
                 auto* init_ball{cell[initial_index]};
                 auto* rel_ball{cell[relative_index]};
 
-                //if (init_ball->id > rel_ball->id) continue;
+                if (init_ball->id > rel_ball->id) continue;
 
                 float dx{rel_ball->pos.x - init_ball->pos.x};
                 float dy{rel_ball->pos.y - init_ball->pos.y};
@@ -122,7 +144,7 @@ void World::update(float dt) {
                     float distance{std::sqrt(distancce_sq)};
                     float overlap{radius_sum-distance};
 
-                    if (distance > 0.0f) {
+                    if (distance >= 0.0f) {
                         float nx{(dx)/distance};
                         float ny{(dy)/distance};
 

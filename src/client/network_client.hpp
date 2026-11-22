@@ -18,6 +18,7 @@ private slots:
     void on_ready_read();
 
 private:
+
     QTcpSocket* socket_;
     QByteArray network_buffer_;
 };

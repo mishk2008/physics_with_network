@@ -29,5 +29,6 @@ signals:
     void snapshot_received(const Snapshot& snap);
     void connected();
     void disconnected();
+    void error_occured(const QString& error_message);
 };
 #endif

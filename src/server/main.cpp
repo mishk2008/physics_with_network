@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    World world(10);
+    World world(99);
     uint32_t tick{0};
     asio::steady_timer timer(io);
 
@@ -46,8 +46,8 @@ int main(int argc, char** argv) {
             int cmd{std::stoi(command)};
 
             if (cmd == 0) { io.stop(); break; }
-            else if (cmd == 1) { world.delete_ball(); }
-            else if (cmd == 2) { world.add_random_ball(); }
+            else if (cmd == 1) { asio::post(io, [&world]() { world.delete_ball(); }); }
+            else if (cmd == 2) { asio::post(io, [&world]() { world.add_random_ball(); }); }
             else if (cmd == 3) {
                 std::cout << "0 < x < " << world.get_borders().first <<
                             "; 0 < y < " << world.get_borders().second << "; 0 < radius < 100; mass > 0;\nAll parameters are float type (0.0f);\n" <<
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
                 (ball.pos.y > 0.0f && ball.pos.y < world.get_borders().second) &&
                 (ball.radius > 0.0f && ball.radius < 100.0f) && (ball.mass > 0.0f)) {
                     ball.id=world.get_balls_num();
-                    world.add_ball(ball);
+                    asio::post(io, [&world, ball]() { world.add_ball(ball); });
                 } else std::cerr << "Error, input data does not conform to the agreed-upon format.\n";
             }
             else std::cout << "Wrong input : ";

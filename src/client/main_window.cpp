@@ -52,14 +52,11 @@ MainWindow::MainWindow(QWidget *parent)
         bool ok{0};
         quint16 port{static_cast<quint16>(port_input_->text().toUShort(&ok))};
         if (!ok) { status_label_->setText("Status : Invalid port");
-        } else if (!(std::regex_match(host.toStdString(), host_pattern))) { status_label_->setText("Status : Invalid host");
+        } else if (!(std::regex_match(host.toStdString(), host_pattern)) && host.toStdString() != "localhost") { status_label_->setText("Status : Invalid host");
         } else {
             status_label_->setText(QString("Status : Connecting to %1:%2...").arg(host).arg(port));
             network_client_->connect_to_server(host, port);
         }
-
-        connect_button_->setEnabled(false);
-        disconnect_button_->setEnabled(true);         
     });
 
     connect(disconnect_button_, &QPushButton::clicked, this, [this]() {
@@ -73,4 +70,23 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     connect(ball_parameters_, &QCheckBox::toggled, ball_widget_, &BallWidget::setBallInfoVisible);
+
+    connect(network_client_, &IClientTransport::connected, this, [this]() {
+        status_label_->setText("Status : Connected");
+        connect_button_->setEnabled(false);
+        disconnect_button_->setEnabled(true);
+    });
+
+    connect(network_client_, &IClientTransport::disconnected, this, [this]() {
+        if (!status_label_->text().startsWith("Status : Error")) {
+            status_label_->setText("Status : Disconnected");            
+        }
+        connect_button_->setEnabled(true);
+        disconnect_button_->setEnabled(false);
+        ball_widget_->clear_field();
+    });
+
+    connect(network_client_, &IClientTransport::error_occured, this, [this](const QString& error_msg) {
+        status_label_->setText("Status : Error (" + error_msg + ')');
+    });
 }

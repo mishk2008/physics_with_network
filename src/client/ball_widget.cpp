@@ -36,13 +36,15 @@ void BallWidget::paintEvent(QPaintEvent* event) {
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(0, 0, 800, 600);
 
+    bool draw_text{m_isBallInfoVisible && balls_.size() < 100};
+
     for (const auto& ball : balls_) {
 
         painter.setPen(Qt::NoPen);
         painter.setBrush(Qt::red);
         painter.drawEllipse(QPointF(ball.pos.x, ball.pos.y), ball.radius, ball.radius);
 
-        if (m_isBallInfoVisible) {
+        if (draw_text) {
             QString b_pos_x=QString("x: %1").arg(ball.pos.x, 0, 'f', 1);
             QString b_pos_y=QString("y: %1").arg(ball.pos.y, 0, 'f', 1);
             double velocity{sqrt(std::pow(ball.vel.x, 2)+std::pow(ball.vel.y, 2))};
