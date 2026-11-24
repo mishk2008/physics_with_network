@@ -10,6 +10,9 @@ public:
     virtual void start() = 0;
     virtual void broadcast_snapshot(const Snapshot& snapshot) = 0;
     virtual void remove_session(std::shared_ptr<class Session> session) = 0;    
+
+    virtual size_t get_session_count() const = 0;
+    virtual uint64_t get_bytes_sent() const = 0;
 };
 
 #ifdef QT_CORE_LIB // макрос чтобы сервер оставался чистым C++ без Qt

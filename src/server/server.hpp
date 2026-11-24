@@ -22,9 +22,14 @@ public:
 
     void remove_session(std::shared_ptr<Session> session);
 
+    size_t get_session_count() const;
+    uint64_t get_bytes_sent() const;
+
 private:
     void do_accept();
     tcp::acceptor acceptor_;
     tcp::socket socket_;
     std::vector<std::shared_ptr<Session>> sessions_;
+
+    uint64_t bytes_sent_{0};
 };

@@ -15,6 +15,7 @@
 CMakeSettings.json
 out/
 build/
+docs/
 Debug/
 Release/
 

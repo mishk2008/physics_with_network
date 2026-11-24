@@ -5,7 +5,7 @@
 #include <asio.hpp>
 #include <string>
 #include <sstream>
-#include <limits>
+#include <fstream>
 
 constexpr float interval{0.05f};
 
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    World world(99);
+    World world(10);
     uint32_t tick{0};
     asio::steady_timer timer(io);
 
@@ -71,9 +71,21 @@ int main(int argc, char** argv) {
     });
 
     std::function<void()> tick_handler=[&]() {
+        //auto start{std::chrono::high_resolution_clock::now()};
         world.update(interval);
+        //auto end{std::chrono::high_resolution_clock::now()};
+        //auto ms{std::chrono::duration<float, std::milli>(end - start).count()};
 
-        //world.print();
+        //static int counter{0};
+        //static float total_ms{0};
+        //total_ms+=ms;
+        //counter++;
+
+        //if (counter==100) {
+        //    std::cout << "Balls : " << world.get_balls_num()
+        //    << "| Avg update time : " << (total_ms / 100.0f) << "ms\n";
+        //    counter=0; total_ms=0; 
+        //}
 
         auto snap{world.make_snapshot(tick)};
 
@@ -84,13 +96,46 @@ int main(int argc, char** argv) {
             if (!ec) tick_handler();
         });
 
+        tick++;
     };
     
     timer.expires_after(std::chrono::milliseconds(50));
     timer.async_wait([&](std::error_code ec) {
         if (!ec) tick_handler();
     });
+/*
+    asio::steady_timer log_timer(io);
+    uint64_t last_bytes{0};
 
+    std::ofstream file("server_log.csv", std::ios::app);
+    if (file.is_open()) {
+        file << "tick,clients,balls,bytes_per_sec\n";
+    }
+
+    std::function<void()> log_handler{[&]() {
+
+        if (file.is_open()) {
+            uint64_t current_bytes{server->get_bytes_sent()};
+            uint64_t bytes_sec{current_bytes - last_bytes};
+            last_bytes = current_bytes;
+
+            file << tick << ","
+            << server->get_session_count() << ","
+            << world.get_balls_num() << ","
+            << bytes_sec << "\n";
+        }
+
+        log_timer.expires_after(std::chrono::seconds(1));
+        log_timer.async_wait([&](std::error_code ec) {
+            if (!ec) log_handler();
+        });
+    }};
+
+    log_timer.expires_after(std::chrono::seconds(1));
+    log_timer.async_wait([&](std::error_code ec) {
+        if (!ec) log_handler();
+    });    
+*/
     io.run();
 
     if (control_thread.joinable()) control_thread.join();

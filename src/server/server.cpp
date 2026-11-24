@@ -40,7 +40,17 @@ void TcpServer::broadcast_snapshot(const Snapshot& snapshot) {
     auto payload{Marshaling::serialize(snapshot)};
 
     for (auto& session : sessions_) {
-        if (session) session->send_raw(payload);
+        if (session) {            
+            bytes_sent_+=payload.size();
+            session->send_raw(payload);
+        }
     }
 }
     
+size_t TcpServer::get_session_count() const {
+    return sessions_.size();
+}
+
+uint64_t TcpServer::get_bytes_sent() const {
+    return bytes_sent_;
+}
